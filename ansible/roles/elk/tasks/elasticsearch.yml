@@ -1,0 +1,75 @@
+---
+# Задачи для установки и настройки Elasticsearch
+
+- name: Install required system packages for Elasticsearch
+  apt:
+    name:
+      - wget
+      - gnupg
+      - apt-transport-https
+      - openjdk-11-jdk # Elasticsearch 7.x требует Java 8+
+    state: present
+    update_cache: yes
+
+- name: Download Elasticsearch .deb package
+  get_url:
+    url: "{{ elasticsearch_package_url }}"
+    dest: "/tmp/{{ elasticsearch_package_name }}"
+    mode: '0644'
+
+- name: Install Elasticsearch .deb package
+  apt:
+    deb: "/tmp/{{ elasticsearch_package_name }}"
+    state: present
+
+- name: Ensure Elasticsearch data directory exists with correct ownership
+  file:
+    path: /usr/share/elasticsearch/data
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+
+- name: Ensure Elasticsearch logs directory exists with correct ownership
+  file:
+    path: /usr/share/elasticsearch/logs
+    state: directory
+    owner: elasticsearch
+    group: elasticsearch
+    mode: '0750'
+
+- name: Ensure Elasticsearch service is enabled
+  systemd:
+    name: "{{ elasticsearch_service_name }}"
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create Elasticsearch config file from template
+  template:
+    src: elasticsearch.yml.j2
+    dest: /etc/elasticsearch/elasticsearch.yml
+    owner: root
+    group: elasticsearch
+    mode: '0640'
+  notify: restart elasticsearch
+
+# --- ОСТАНОВКА СЕРВИСА ПЕРЕД ПЕРВЫМ ЗАПУСКОМ ---
+# Это необходимо, чтобы применить конфигурацию и права доступа
+- name: Stop Elasticsearch service (to apply config and permissions)
+  systemd:
+    name: "{{ elasticsearch_service_name }}"
+    state: stopped
+  # ignore_errors: yes # Может быть не запущен, это нормально
+
+- name: Start and enable Elasticsearch service
+  systemd:
+    name: "{{ elasticsearch_service_name }}"
+    state: started
+    enabled: yes
+
+- name: Wait for Elasticsearch to start
+  wait_for:
+    host: "{{ ansible_default_ipv4.address | default('127.0.0.1') }}"
+    port: "{{ elasticsearch_port }}"
+    delay: 10
+    timeout: 300

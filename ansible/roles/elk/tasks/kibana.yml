@@ -1,0 +1,116 @@
+---
+# Задачи для установки и настройки Kibana
+
+- name: Install required system packages for Kibana
+  apt:
+    name:
+      - wget
+    state: present
+    update_cache: yes
+
+- name: Download Kibana .deb package
+  get_url:
+    url: "{{ kibana_package_url }}"
+    dest: "/tmp/{{ kibana_package_name }}"
+    mode: '0644'
+
+- name: Install Kibana .deb package
+  apt:
+    deb: "/tmp/{{ kibana_package_name }}"
+    state: present
+
+- name: Install Nginx for Kibana reverse proxy with basic auth
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Install python3-passlib package on target host (for htpasswd module)
+  apt:
+    name: python3-passlib
+    state: present
+  # Модуль htpasswd требует библиотеку passlib на целевом хосте
+
+- name: Create htpasswd file for Kibana
+  htpasswd:
+    path: /etc/nginx/.htpasswd
+    name: "{{ kibana_auth_user }}"
+    password: "{{ kibana_auth_password }}"
+    owner: root
+    group: www-data
+    mode: '0640'
+  # Переменные kibana_auth_user и kibana_auth_password должны быть определены
+  # в group_vars/elk.yml или переданы в playbook.
+
+- name: Create Nginx configuration for Kibana reverse proxy
+  template:
+    src: nginx_kibana_proxy.conf.j2
+    dest: /etc/nginx/sites-available/kibana_proxy
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload nginx
+
+- name: Enable Nginx site for Kibana proxy
+  file:
+    src: /etc/nginx/sites-available/kibana_proxy
+    dest: /etc/nginx/sites-enabled/kibana_proxy
+    state: link
+  notify:
+    - reload nginx
+
+- name: Disable default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify:
+    - reload nginx
+
+- name: Ensure Kibana service is enabled
+  systemd:
+    name: "{{ kibana_service_name }}"
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create Kibana config file from template
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+    owner: root
+    group: kibana
+    mode: '0640'
+  notify: restart kibana
+
+# Дождаться, пока Elasticsearch будет готов
+- name: Wait for Elasticsearch to be ready before starting Kibana
+  uri:
+    url: "http://{{ elasticsearch_ip }}:{{ elasticsearch_port }}"
+    method: GET
+    status_code: 200
+  retries: 30
+  delay: 10
+  register: elasticsearch_status
+  until: elasticsearch_status.status == 200
+  ignore_errors: true # Не фатально, если проверка не удалась сразу
+
+- name: Start and enable Kibana service
+  systemd:
+    name: "{{ kibana_service_name }}"
+    state: started
+    enabled: yes
+
+# Дождаться запуска Kibana (на порту 5601, который теперь внутренний)
+- name: Wait for Kibana to start (internal port)
+  wait_for:
+    host: "localhost" # Kibana теперь слушает только localhost
+    port: "{{ kibana_port }}"
+    delay: 10
+    timeout: 300
+
+# Перезапустить Nginx в конце, чтобы убедиться, что он подхватил все изменения
+- name: Ensure Nginx is started and enabled
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes

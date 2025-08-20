@@ -1,0 +1,4 @@
+---
+- name: Include Filebeat tasks
+  include_tasks: filebeat.yml
+  when: "inventory_hostname in groups['webservers']"

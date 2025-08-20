@@ -1,0 +1,10 @@
+---
+# Основной файл задач для роли ELK
+
+- name: Include Elasticsearch tasks
+  include_tasks: elasticsearch.yml
+  when: "'elasticsearch' in inventory_hostname"
+
+- name: Include Kibana tasks
+  include_tasks: kibana.yml
+  when: "'kibana' in inventory_hostname"

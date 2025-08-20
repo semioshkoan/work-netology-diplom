@@ -1,0 +1,26 @@
+# Kibana is served by a back end server. This setting specifies the port to use.
+server.port: {{ kibana_port }}
+
+# Specifies the address to which the Kibana server will bind.
+# Kibana будет доступна только через Nginx reverse proxy.
+server.host: "{{ kibana_server_host }}" # ВАЖНО: Изменено с 0.0.0.0
+
+# The URLs of the Elasticsearch instances to use for all your queries.
+# Kibana подключается к Elasticsearch по его внутреннему IP.
+elasticsearch.hosts: ["http://{{ elasticsearch_ip }}:{{ elasticsearch_port }}"]
+
+# Kibana uses an index in Elasticsearch to store saved searches, visualizations and dashboards.
+# kibana.index: ".kibana"
+
+# The default application to load.
+# kibana.defaultAppId: "home"
+
+# Логирование
+# logging.dest: stdout
+# logging.silent: false
+# logging.quiet: false
+# logging.verbose: false
+
+# Отключение SSL для упрощения
+# server.ssl.enabled: false
+# elasticsearch.ssl.verificationMode: none

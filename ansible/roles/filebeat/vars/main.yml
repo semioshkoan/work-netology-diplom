@@ -1,0 +1,9 @@
+---
+# --- Filebeat ---
+filebeat_version: "7.15.1"
+filebeat_package_url: "https://mirror.yandex.ru/mirrors/elastic/7/pool/main/f/filebeat/filebeat-{{ filebeat_version }}-amd64.deb"
+filebeat_package_name: "filebeat-{{ filebeat_version }}-amd64.deb"
+filebeat_service_name: "filebeat"
+
+# --- PHP Version для Filebeat (если нужно) ---
+php_version: "8.1" # Должна совпадать с версией в других ролях

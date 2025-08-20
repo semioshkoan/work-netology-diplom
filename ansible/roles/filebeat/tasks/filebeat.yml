@@ -1,0 +1,60 @@
+---
+# Задачи для установки и настройки Filebeat на веб-серверах
+
+- name: Install required system packages for Filebeat
+  apt:
+    name:
+      - wget
+    state: present
+    update_cache: yes
+
+- name: Download Filebeat .deb package
+  get_url:
+    url: "{{ filebeat_package_url }}"
+    dest: "/tmp/{{ filebeat_package_name }}"
+    mode: '0644'
+
+- name: Install Filebeat .deb package
+  apt:
+    deb: "/tmp/{{ filebeat_package_name }}"
+    state: present
+
+- name: Ensure Filebeat service is enabled
+  systemd:
+    name: "{{ filebeat_service_name }}"
+    enabled: yes
+    daemon_reload: yes
+
+- name: Create Filebeat config file from template
+  template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart filebeat
+
+- name: Enable nginx module for Filebeat
+  command: filebeat modules enable nginx
+  args:
+    chdir: /etc/filebeat
+  # changed_when: false # Можно добавить, если модуль уже включен
+  notify: restart filebeat
+
+# Дождаться, пока Elasticsearch будет готов, прежде чем запускать Filebeat
+- name: Wait for Elasticsearch to be ready before starting Filebeat
+  uri:
+    url: "http://{{ elasticsearch_ip }}:{{ elasticsearch_port }}"
+    method: GET
+    status_code: 200
+  retries: 30 # Попробовать 30 раз
+  delay: 10   # Ждать 10 секунд между попытками
+  register: elasticsearch_status
+  until: elasticsearch_status.status == 200
+
+# Предполагается, что переменная elasticsearch_ip передается из playbook
+- name: Start and enable Filebeat service
+  systemd:
+    name: "{{ filebeat_service_name }}"
+    state: started
+    enabled: yes

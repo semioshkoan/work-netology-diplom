@@ -1,0 +1,20 @@
+---
+# Handlers for ELK role
+
+- name: restart elasticsearch
+  systemd:
+    name: elasticsearch
+    state: restarted
+  listen: "restart elasticsearch"
+
+- name: restart kibana
+  systemd:
+    name: kibana
+    state: restarted
+  listen: "restart kibana"
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+  listen: "reload nginx"

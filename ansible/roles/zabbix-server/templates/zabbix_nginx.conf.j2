@@ -1,0 +1,31 @@
+server {
+    listen 80;
+    server_name {{ zabbix_public_ip }};
+
+    root /usr/share/zabbix;
+    index index.php;
+
+    access_log /var/log/nginx/zabbix.access.log;
+    error_log /var/log/nginx/zabbix.error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location ~ /(conf|app|include|local) {
+        deny all;
+        return 404;
+    }
+}

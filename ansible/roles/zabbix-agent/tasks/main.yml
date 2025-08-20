@@ -1,0 +1,53 @@
+---
+- name: Скачивание Zabbix релиз-пакета (.deb)
+  get_url:
+    url: "{{ zabbix_agent_deb_url }}"
+    dest: "/tmp/zabbix-release.deb"
+    mode: '0644'
+    force: yes # Принудительно скачивать, даже если файл существует
+  tags: zabbix_agent_install
+  
+- name: Установка Zabbix релиз-пакета
+  apt:
+    deb: "/tmp/zabbix-release.deb"
+    state: present
+  tags: zabbix_agent_install
+
+- name: Обновление списка пакетов APT
+  apt:
+    update_cache: yes
+  tags: zabbix_agent_install
+
+- name: Установка пакета Zabbix Agent
+  apt:
+    name: "{{ zabbix_agent_package_name }}"
+    state: present
+    update_cache: yes # Обновить кэш после добавления репозитория
+  tags: zabbix_agent_install
+
+- name: Создание директории для пользовательских конфигов (если нужно)
+  file:
+    path: /etc/zabbix/zabbix_agentd.d
+    state: directory
+    owner: zabbix
+    group: zabbix
+    mode: '0755'
+  tags: zabbix_agent_config
+
+- name: Конфигурация Zabbix Agent из шаблона
+  template:
+    src: zabbix_agentd.conf.j2
+    dest: "{{ zabbix_agent_config_file }}"
+    owner: zabbix
+    group: zabbix
+    mode: '0644'
+    backup: yes
+  notify: restart zabbix-agent
+  tags: zabbix_agent_config
+
+- name: Запуск и включение службы Zabbix Agent
+  systemd:
+    name: "{{ zabbix_agent_service_name }}"
+    enabled: yes
+    state: started
+  tags: zabbix_agent_service

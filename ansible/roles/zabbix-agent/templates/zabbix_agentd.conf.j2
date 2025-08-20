@@ -1,0 +1,39 @@
+# Managed by Ansible
+# Template: roles/zabbix-agent/templates/zabbix_agentd.conf.j2
+
+PidFile=/var/run/zabbix/zabbix_agentd.pid
+LogFile=/var/log/zabbix/zabbix_agentd.log
+LogFileSize=0
+
+Server={{ zabbix_agent_server }}
+{% if zabbix_agent_server_active is defined %}
+ServerActive={{ zabbix_agent_server_active }}
+{% else %}
+ServerActive={{ zabbix_agent_server }}:{{ zabbix_agent_server_port }}
+{% endif %}
+
+# Используем FQDN хоста Ansible как Hostname
+Hostname={{ ansible_fqdn }}
+
+# RefreshActiveChecks - как часто агент обращается к ServerActive для получения списка активных проверок
+RefreshActiveChecks=120
+
+# BufferSend - как часто буфер отправляется на сервер, если он заполнен
+BufferSend=5
+
+# BufferSize - максимальное количество значений, которые могут быть сохранены в буфере
+BufferSize=100
+
+# Timeout - таймаут для обработки элементов данных
+Timeout=3
+
+# Include - путь к файлам пользовательских параметров
+Include=/etc/zabbix/zabbix_agentd.d/*.conf
+
+# UnsafeUserParameters - разрешает передачу специальных символов в пользовательских параметрах
+UnsafeUserParameters=1
+
+# UserParameter - пример пользовательского параметра (раскомментируй и измени при необходимости)
+# UserParameter=custom.ping[*],fping -C -c 1 -q -t 1000 $1 2>&1 | tail -1 | cut -d ":" -f 2 | xargs
+
+# Добавь другие параметры конфигурации здесь при необходимости

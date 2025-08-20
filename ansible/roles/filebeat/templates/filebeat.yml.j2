@@ -1,0 +1,99 @@
+###################### Filebeat Configuration Example #########################
+
+# Это упрощенный конфигурационный файл Filebeat.
+# Он настроен для использования модуля nginx и отправки данных в Elasticsearch.
+
+# ============================== Filebeat modules ==============================
+
+filebeat.config.modules:
+  # Путь к файлам модулей
+  path: ${path.config}/modules.d/*.yml
+
+  # Включение автоматической перезагрузки конфигурации модулей
+  reload.enabled: false
+
+# ======================= Elasticsearch template setting =======================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  #index.codec: best_compression
+  #_source.enabled: false
+
+# ================================== General ===================================
+
+# Имя этого Filebeat
+#name:
+
+# Теги для этой инстанции Filebeat
+#tags: ["service-X", "web-tier"]
+
+# Дополнительные поля
+#fields:
+#  env: staging
+
+# =============================== Dashboards ===================================
+
+# Загрузка дашбордов отключена по умолчанию
+#setup.dashboards.enabled: false
+
+# =================================== Kibana ===================================
+
+# Настройки для Kibana API
+setup.kibana:
+  # Kibana запущена на том же хосте по умолчанию
+  #host: "localhost:5601"
+
+# =============================== Elastic Cloud ================================
+
+# Настройки для Elastic Cloud (если используется)
+#cloud.id:
+#cloud.auth:
+
+# ================================== Outputs ===================================
+
+# --- Настройка вывода в Elasticsearch ---
+# Filebeat будет отправлять данные напрямую в Elasticsearch.
+output.elasticsearch:
+  # Список хостов Elasticsearch
+  hosts: ["http://{{ elasticsearch_ip }}:{{ elasticsearch_port }}"]
+  
+  # Протокол (по умолчанию http)
+  #protocol: "http"
+
+  # Учетные данные, если требуется аутентификация
+  #username: "filebeat_internal"
+  #password: "YOUR_FILEBEAT_PASSWORD"
+
+# --- Альтернативный вывод в Logstash (закомментирован) ---
+#output.logstash:
+  # Хосты Logstash
+  #hosts: ["localhost:5044"]
+
+# ================================= Processors =================================
+
+# Стандартные процессоры
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+# ================================== Logging ===================================
+
+# Уровень логирования
+#logging.level: info
+
+# ============================= X-Pack Monitoring ==============================
+
+# Мониторинг отключен по умолчанию
+#monitoring.enabled: false
+
+# ============================== Instrumentation ===============================
+
+# Инструментация отключена по умолчанию
+#instrumentation.enabled: false
+
+# ================================= Migration ==================================
+
+# Миграция отключена по умолчанию
+#migration.6_to_7.enabled: true

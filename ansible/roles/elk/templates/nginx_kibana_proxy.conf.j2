@@ -1,0 +1,29 @@
+# Nginx configuration for Kibana reverse proxy with basic authentication
+# Managed by Ansible
+
+server {
+    listen 80;
+    server_name {{ ansible_default_ipv4.address | default('kibana') }}; # Используем IP или имя хоста
+
+    # Включение HTTP Basic Authentication
+    auth_basic "Kibana Restricted Access";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location / {
+        # Проксирование запросов к Kibana, запущенной на localhost:{{ kibana_port }}
+        proxy_pass http://localhost:{{ kibana_port }};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+
+        # Таймауты для прокси
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}

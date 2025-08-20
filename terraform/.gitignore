@@ -1,0 +1,8 @@
+terraform.tfvars
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+templates
+.terraform
+ansible/group_vars/
+.vscode/

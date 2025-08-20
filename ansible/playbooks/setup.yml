@@ -1,0 +1,72 @@
+
+- name: Configure all hosts
+  hosts: all
+  become: true
+  tasks:
+    - name: Configure DNS resolver
+      copy:
+        content: "nameserver 8.8.8.8"
+        dest: "/etc/resolv.conf"
+        mode: "0644"
+
+# --- 1. Установка WEB-серверов ---
+- name: Configure webservers
+  hosts: webservers
+  become: true
+  tags: web
+  vars:
+    zabbix_server_ip: "192.168.10.23"
+    elasticsearch_ip: "192.168.20.21"
+    kibana_public_ip: "89.169.131.216"
+    # Переменные для роли zabbix-agent
+    zabbix_agent_server: "192.168.10.23"
+    zabbix_agent_server_port: 10051
+  roles:
+    - web
+    
+# --- 2. Установка ZABBIX-сервера ---
+- name: Configure Zabbix
+  hosts: zabbix
+  become: true
+  tags: zabbix
+  vars:
+    zabbix_public_ip: "89.169.153.230"
+  vars_files:
+    - ../group_vars/zabbix.yml  
+  roles:
+    - zabbix-server
+
+# --- 3. Установка ELK (Elasticsearch, Kibana, Filebeat) ---
+- name: Configure ELK
+  hosts: elk
+  become: true
+  tags: elk 
+  vars:
+    elasticsearch_ip: "192.168.20.21"
+    kibana_ip: "192.168.10.6"
+    # Передаем переменные аутентификации напрямую из Terraform
+  roles:
+    - elk
+    
+# --- 4. Установка FILEBEAT на WEB-серверах ---
+- name: Configure Filebeat on webservers
+  hosts: webservers
+  become: true
+  tags: filebeat
+  vars:
+    elasticsearch_ip: "192.168.20.21"
+    elasticsearch_port: 9200
+    kibana_public_ip: "89.169.131.216"
+  roles:
+    - filebeat
+
+# --- 5. Установка ZABBIX-агентов на WEB-серверах ---
+- name: Configure Zabbix Agents on webservers
+  hosts: webservers
+  become: true
+  tags: zabbix-agent-web
+  vars:
+    zabbix_agent_server: "192.168.10.23"
+    zabbix_agent_server_port: 10051
+  roles:
+    - zabbix-agent

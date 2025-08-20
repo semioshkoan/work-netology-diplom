@@ -1,0 +1,7 @@
+---
+# Default variables for ELK role
+
+# --- Default credentials for Kibana Basic Auth ---
+# These can/should be overridden in group_vars/elk.yml or playbook vars
+kibana_auth_user: "kibanaadmin"
+kibana_auth_password: "CHANGE_ME_IN_GROUP_VARS_OR_VAULT"
